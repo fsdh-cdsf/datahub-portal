@@ -1,0 +1,135 @@
+@using MudBlazor.Utilities
+@using Microsoft.Graph.Models
+@using Datahub.Core.Model.Datahub
+@using Datahub.Application.Configuration
+@using Datahub.Application.Services.UserManagement
+@using Datahub.Core.Model.Projects
+@using Datahub.Portal.Pages.Project
+@using Datahub.Portal.Pages.Explore
+
+@inject IUserInformationService _userInformationService
+@inject IConfiguration _configuration
+@inject IDbContextFactory<DatahubProjectDBContext> _dbContextFactory
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+@inject DatahubPortalConfiguration _datahubPortalConfiguration
+
+@if (_userRoles is null)
+{
+    <DHLoadingInitializer/>
+    return;
+}
+
+<MudStack>
+    @if (_adminProjects.Any())
+    {
+        @if (ShowTitle)
+        {
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.h2" Class="mb-4">@Localizer["Admin workspaces"]</MudText>
+        }
+        <div role="group">
+            <ul style="display: flex; list-style-type: none; gap: 25px; flex-wrap: wrap">
+                @foreach (var project in _adminProjects)
+                {
+                    <li class="flex-1">
+                        <ProjectPreviewCard Project="@project"/>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (_collaboratedProjects.Any())
+    {
+        @if (ShowTitle)
+        {
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.h2" Class="mb-4">@Localizer["Collaborator workspaces"]</MudText>
+        }
+        <div role="group">
+            <ul style="display: flex; list-style-type: none; gap: 25px; flex-wrap: wrap">
+                @foreach (var project in _collaboratedProjects)
+                {
+                    <li class="flex-1">
+                        <ProjectPreviewCard Project="@project"/>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+    
+    @if (_guestProjects.Any())
+    {
+        @if (ShowTitle)
+        {
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.h2" Class="mb-4">@Localizer["Guest workspaces"]</MudText>
+        }
+        <div role="group">
+            <ul style="display: flex; list-style-type: none; gap: 25px; flex-wrap: wrap">
+                @foreach (var project in _guestProjects)
+                {
+                    <li class="flex-1">
+                        <ProjectPreviewCard Project="@project"/>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</MudStack>
+
+@code {
+
+    [Parameter] public bool ShowTitle { get; set; } = true;
+
+    [Parameter] public int SmSize { get; set; } = 4;
+
+    [Parameter] public string UserId { get; set; }
+
+    private bool _isCurrentUser;
+
+    private const int MaxWorkspaceCount = 3;
+
+    private List<Datahub_Project_User> _userRoles;
+    private int _numberOfRemainingWorkspaces;
+
+    private List<Datahub_Project> _adminProjects;
+    private List<Datahub_Project> _collaboratedProjects;
+    private List<Datahub_Project> _guestProjects;
+
+    private string _chipStyle = new StyleBuilder()
+        .AddStyle("margin-left", "0")
+        .AddStyle("margin-bottom", "0")
+        .Build();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        var portalUser = await _userInformationService.GetCurrentPortalUserAsync();
+        var userId = UserId ?? portalUser.GraphGuid;
+        _isCurrentUser = userId == portalUser.GraphGuid;
+
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        _userRoles = await dbContext.Project_Users
+            .Include(u => u.Role)
+            .Include(u => u.Project)
+            .ThenInclude(p => p.Users)
+            .Include(u => u.PortalUser)
+            .Where(u => u.PortalUser.GraphGuid == userId)
+            .ToListAsync();
+
+        _numberOfRemainingWorkspaces = MaxWorkspaceCount - _userRoles.Count(u => u.RoleId == (int)Project_Role.RoleNames.WorkspaceLead);
+
+        _adminProjects = _userRoles.Where(u => u.RoleId == (int)Project_Role.RoleNames.WorkspaceLead || u.RoleId == (int)Project_Role.RoleNames.Admin).Select(u => u.Project).ToList();
+        _collaboratedProjects = _userRoles.Where(u => u.RoleId == (int)Project_Role.RoleNames.Collaborator).Select(u => u.Project).ToList();
+        _guestProjects = _userRoles.Where(u => u.RoleId == (int)Project_Role.RoleNames.Guest).Select(u => u.Project).ToList();
+    }
+
+    private async Task ShowProjectDialog()
+    {
+        NavigationManager.NavigateTo(Localizer[PageRoutes.CreateWorkspace]);
+    }
+
+}

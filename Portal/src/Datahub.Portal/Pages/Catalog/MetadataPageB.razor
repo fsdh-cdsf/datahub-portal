@@ -1,0 +1,77 @@
+﻿@page "/metadatab"
+@using Datahub.Application.Services.Metadata
+
+<div style="margin: 2rem">
+    <AeCard>
+        <Header>
+            <h2>Metadata</h2>
+        </Header>
+        <ChildContent>
+            <input class="ae input"
+                   type="text"
+                   @bind="BoundValue"
+                   @bind:event="oninput"
+                   style="width: 100%;" />
+
+            <div>
+                <ul>
+                    @foreach (var kw in _keywords)
+                    {
+                        <li>@kw</li>
+                    }
+                </ul>
+            </div>
+
+            <div>
+                <AeTypography>Queries: @_queryCount</AeTypography>
+            </div>
+
+            <div>
+                <AeButton @onclick="ErrorClick" >Error Now!</AeButton>
+            </div>
+
+        </ChildContent>
+    </AeCard>
+</div>
+
+@code {
+
+    [Inject]
+    public IMetadataBrokerService MetadataBrokerService { get; set; }
+
+
+    protected override void OnInitialized()
+    {
+        _suggestionThrottler = new QueryThrottler<string>(TimeSpan.FromSeconds(0.5), TriggerAutoCompleteAsync);
+    }
+
+    private string _keyword;
+    private List<string> _keywords = new();
+    private QueryThrottler<string> _suggestionThrottler;
+    private int _queryCount;
+
+    private string BoundValue
+    {
+        get => _keyword;
+        set
+        {
+            if (value != _keyword)
+            {
+                _keyword = value;
+                _ = _suggestionThrottler.SetQuery(value);
+            }
+        }
+    }
+
+    private async Task TriggerAutoCompleteAsync(string text)
+    {
+        _keywords = await MetadataBrokerService.GetSuggestedEnglishKeywords(text, 10);
+        _queryCount++;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ErrorClick()
+    {
+        throw new Exception("Click Error!!");
+    }
+}

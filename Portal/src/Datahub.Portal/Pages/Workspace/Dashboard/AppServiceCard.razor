@@ -1,0 +1,55 @@
+﻿@using Datahub.Application.Services.ReverseProxy
+@using Datahub.Core.Model.Projects
+@inject IReverseProxyConfigService _reverseProxyConfigService
+
+<MudPaper Outlined Class="pa-4">
+    <MudStack>
+        <MudStack Row AlignItems="AlignItems.Center">
+            <DHIcon Icon="@SidebarIcons.WebApp" Size="Size.Medium" />
+            <MudText Typo="Typo.h3">@Localizer["Web Application"]</MudText>
+            <MudSpacer/>
+
+        </MudStack>
+        <MudText>
+            @Localizer["Navigate to the Azure App Service to view your web application, where you can serve interactive and user-friendly dashboards."]
+        </MudText>
+        @if (ProjectResource.CreatedAt.HasValue)
+        {
+            <MudElement HtmlTag="div">
+                <DHButton
+                    Href="@GetWebAppUrl()"
+                    Target="_blank"
+                    Color="Color.Primary"
+                    Variant="@Variant.Text"
+                    EndIcon="@SidebarIcons.External"
+                    Underline>
+                    @Localizer["Navigate to Web App"]
+                </DHButton>
+            </MudElement>
+            <MudElement HtmlTag="div">
+                <DHButton Href=@($"/{PageRoutes.WorkspacePrefix}/{WorkspaceAcronym}/{_reverseProxyConfigService.WebAppPrefix}")
+                          Color="Color.Primary"
+                          Variant="@Variant.Text"
+                          EndIcon="@Icons.Material.Outlined.KeyboardDoubleArrowRight"
+                          Underline>
+                    @Localizer["View Web App configuration"]
+                </DHButton>
+            </MudElement>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+
+    [Parameter] [EditorRequired] public Project_Resources2 ProjectResource { get; set; }
+
+    [Parameter] [EditorRequired] public string WorkspaceAcronym { get; set; }
+
+
+    private string GetWebAppUrl()
+    {
+        var url = PageRoutes.WorkspaceWebAppShare.Replace("{WorkspaceAcronymParam}", WorkspaceAcronym);
+        return url;
+    }
+
+}

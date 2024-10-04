@@ -1,0 +1,24 @@
+﻿@use '../../Common' as c;
+@use '../../Components/Card' as card;
+@use '../../Components/Icons/icon-colors';
+@use '../../Components/Sidebar/coloring' as sidebar-coloring;
+.recent-card-grid {
+
+  .recent-card {
+    @include icon-colors.base-icon-color;
+    @include icon-colors.base-icon-hover;
+    @include icon-colors.icon-colors;
+
+    &:hover {
+      box-shadow: var(--mud-elevation-3);
+      .recent-icon{
+        opacity: 1;
+      }
+    }
+
+    .recent-icon {
+      opacity: .5;
+    }
+  }
+
+}

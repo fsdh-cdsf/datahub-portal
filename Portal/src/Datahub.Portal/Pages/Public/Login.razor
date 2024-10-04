@@ -1,0 +1,65 @@
+@page "/login"
+@page "/connexion"
+@using Datahub.Application.Services.UserManagement
+
+@inject NavigationManager _navigationManager
+@inject IUserInformationService _userInformationService
+@inject DatahubPortalConfiguration _portalConfiguration
+
+<PageTitle>@Localizer["Login - Federal Science DataHub"]</PageTitle>
+
+<MudStack Class="my-8 py-8">
+    <MudStack AlignItems="AlignItems.Start" Class="mt-4">
+        <p>
+            <MudText Typo="Typo.body1" Class="text-center">
+                <strong>
+                    @Localizer["Please login to continue"]:
+                </strong>
+                <MudButton Class="mx-4 px-16 my-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="@HandleLogin">
+                    <MudText>
+                        @Localizer["Login"]
+                    </MudText>
+                </MudButton>
+            </MudText>
+        </p>
+        <p>
+            <MudText Typo="Typo.body1">
+                @Localizer["Don't have an account?"]
+                <MudLink Href="/register" Typo="Typo.body1">@Localizer["Register instead"]</MudLink>
+            </MudText>
+        </p>
+    </MudStack>
+</MudStack>
+
+@code {
+
+    [Parameter] [SupplyParameterFromQuery] public string redirectUri { get; set; }
+
+    private void HandleLogin()
+    {
+        //See https://stackoverflow.com/questions/64853618/oidc-authentication-in-server-side-blazor for an alternative
+        if (string.IsNullOrWhiteSpace(redirectUri))
+        {
+            redirectUri = _navigationManager.BaseUri;
+        }
+
+        var url = $"{_navigationManager.BaseUri}MicrosoftIdentity/Account/Challenge?redirectUri={redirectUri}&scope=user.read%20openid%20offline_access%20profile&loginHint=&domainHint=&claims=&policy=";
+        _navigationManager.NavigateTo(url, true);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var user = await _userInformationService.GetAuthenticatedUser(true);
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _navigationManager.NavigateTo("/");
+        }
+        else if (!_portalConfiguration.ShowLoginPage)
+        {
+            HandleLogin();
+        }
+    }
+
+}

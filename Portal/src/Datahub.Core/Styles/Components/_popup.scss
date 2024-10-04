@@ -1,0 +1,22 @@
+﻿@use '../Common' as c;
+
+
+.nrcan-popup {
+    position: absolute;
+    top: 0;
+    max-width: 500px;
+    margin-left: -500px;
+    background-color: c.$white;
+    padding: 1rem;
+
+    @include c.BoxShadow(2);
+
+
+    &.top-nav-popup {
+        top: c.$topbarHeight;
+    }
+
+    .footer {
+        border-top: 1px solid c.$gray-200;
+    }
+}

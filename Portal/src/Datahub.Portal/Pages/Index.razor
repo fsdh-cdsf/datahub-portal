@@ -1,0 +1,18 @@
+﻿@inject NavigationManager _navigationManager
+    
+@page "/"
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            _navigationManager.NavigateTo(Localizer[PageRoutes.Home]);
+        }
+        catch (NavigationException)
+        {
+            // Should be ignored, see https://github.com/dotnet/aspnetcore/issues/13582
+        }
+    }
+}

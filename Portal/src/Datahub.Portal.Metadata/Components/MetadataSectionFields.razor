@@ -1,0 +1,62 @@
+﻿@using Datahub.Metadata.Model
+
+@if (Fields is not null)
+{
+    <MudSelect T="string"
+        MultiSelectionTextFunc="@(new Func<List<string>, string>(GetMultiSelectionText))"
+        SelectedValues=@_selectedIds
+        SelectedValuesChanged=@HandleSelectedValuesChanged
+        Label="Selected Fields"
+        MultiSelection="true"
+        Variant="Variant.Outlined"
+        AnchorOrigin="Origin.BottomCenter"
+        AdornmentIcon=@Icons.Material.Filled.ArrowDropDown
+        Margin="Margin.Dense">
+
+        @foreach (var opt in _options)
+        {
+            <MudSelectItem T="string" Value=@opt.Id.ToString()>@opt.Name</MudSelectItem>
+        }
+
+    </MudSelect>
+}
+
+@code {
+
+    [Parameter]
+    public List<FieldDefinition> Fields { get; set; }
+
+    [Parameter]
+    public HashSet<int> Selection { get; set; }
+
+    private HashSet<string> _selectedIds = new();
+
+    private FieldOption[] _options;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        if (Fields is not null && Selection is not null)
+        {
+            _options = Fields.Select(f => new FieldOption($"{f.FieldDefinitionId}", f.Name_English_TXT, Selection.Contains(f.FieldDefinitionId))).ToArray();
+        }
+
+        _selectedIds = new(_options.Where(o => o.Selected).Select(o => o.Id));
+    }
+
+    private void HandleSelectedValuesChanged(IEnumerable<string> values)
+    {
+        Selection.Clear();
+        foreach (var v in values)
+            Selection.Add(int.Parse(v));
+        _selectedIds = new HashSet<string>(values);
+    }
+
+    private string GetMultiSelectionText(List<string> selectedValues)
+    {
+        return selectedValues.Count > 0 ? $"{selectedValues.Count} field(s) selected." : "No field selected.";
+    }
+
+    record FieldOption(string Id, string Name, bool Selected);
+}

@@ -1,0 +1,92 @@
+﻿@use '../Common' as c;
+
+$buttonOptions: ( 
+    "default": (
+        "background-color": c.$blue-600,
+        "color": c.$white,
+        "border-radius": 8px,
+        "margin-bottom": 0.25rem,
+        "position": relative,
+        "display": inline-block,
+        "padding": .5rem 1rem,
+        "line-height": 1.5,
+        "font-size": 0.8rem,
+        "font-weight": 400,
+        "white-space": nowrap,
+        "text-align": center,
+        "border": none,
+        "transition": all .3s c.$cubic-bezier,
+        "cursor": pointer,
+        "border-color": c.$blue-600,
+        "&:hover": (
+            "background-color": c.$blue-500,
+            "border-color": c.$blue-500,
+        ),
+    ),
+    "dark": (
+        "background-color": c.$gray-800,
+        "border-color": c.$gray-800,
+        "&:hover": (
+            "background-color": c.$gray-700,
+            "border-color": c.$gray-700,
+        ),
+    ),
+    "light": (
+        "color": var(--btn-light-color),
+        "background-color": var(--btn-light-bg-color),
+        "border-color": var(--btn-light-bg-color),
+        "&:hover": (
+            "background-color": var(--btn-light-bg-color-hover),
+            "border-color": var(--btn-light-bg-color-hover),
+        ),
+    ),
+    "blue": (
+        "background-color": c.$blue-600,
+        "border-color": c.$blue-600,
+        "&:hover": (
+            "background-color": c.$blue-700,
+            "border-color": c.$blue-700,
+        ),
+    ),
+    "red": (
+        "background-color": c.$red-600,
+        "border-color": c.$red-600,
+        "&:hover": (
+            "background-color": c.$red-700,
+            "border-color": c.$red-700,
+        ),
+    ),
+    "submitbutton": (
+        "background-color": c.$borderblue,
+        "border-color": c.$borderblue,
+        "border": none,
+        "padding": 10px 20px,
+        "text-align": center,
+        "text-decoration": none,
+        "display": inline-block,
+        "margin": 4px 2px,
+        "cursor": pointer,
+        "border-radius": 16px,
+        "font-size": smaller,
+    ),
+    "cancelbutton": (
+        "background-color": c.$white,
+        "border-color": c.$white,
+        "color": c.$baseBlack,
+        "border": none,
+        "padding": 10px 20px,
+        "text-align": center,
+        "text-decoration": none,
+        "display": inline-block,
+        "margin": 4px 2px,
+        "cursor": pointer,
+        "border-radius": 16px,
+        "font-size": smaller,
+    ),
+    "disabled": (
+        "opacity": .5,
+        "cursor": not-allowed
+    )
+);
+
+

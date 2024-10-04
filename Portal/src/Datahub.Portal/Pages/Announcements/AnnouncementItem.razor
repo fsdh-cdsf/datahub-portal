@@ -1,0 +1,64 @@
+@using Datahub.Core.Model.Announcements
+@using Datahub.Application.Services.UserManagement
+@using Datahub.Application.Services
+
+@inject IUserInformationService _userInformationService
+@inject IUserSettingsService _userSettingsService
+
+<MudGrid>
+    <DatahubAuthView AuthLevel="DatahubAuthView.AuthLevels.DatahubAdmin">
+        <MudItem xs="12" sm="4">
+            <AnnouncementAdminControl Announcement="@Announcement"/>
+        </MudItem>
+    </DatahubAuthView>
+    <MudItem xs="12" sm="@(_isAdminView ? 8 : 12)">
+        <MudPaper Elevation="0" Outlined Class="px-6 py-4" Style="@_style">
+            <MudStack>
+                <DHMarkdown style="order: 1;" Content="@GetBody()" LinkRewriter="RewriteLink"/>
+                <MudStack style="order: -1;" Spacing="0">
+                    <span>
+                        <p>
+                            <MudText Typo="Typo.caption">@Localizer["Posted at {0} by {1}", Announcement.CreatedAt.ToString("yyyy-MM-dd"), Announcement.CreatedBy?.DisplayName ?? "DataHub"]</MudText>
+                        </p>
+                        @if (Announcement.UpdatedAt.HasValue)
+                        {
+                            <p>
+                                <MudText Typo="Typo.caption">@Localizer["Last updated at {0} by {1}", Announcement.UpdatedAt?.ToString("yyyy-MM-dd")!, Announcement.UpdatedBy?.DisplayName ?? "DataHub"]</MudText>
+                            </p>
+                        }
+                    </span>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    [Parameter] public Announcement Announcement { get; set; }
+
+    [Parameter] public bool IsHidden { get; set; }
+
+    private string _style => IsHidden ? "opacity: 0.5;" : string.Empty;
+    private bool _isFrench;
+    private bool _isAdminView;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        _isFrench = await _userSettingsService.IsFrench();
+        _isAdminView = await _userInformationService.IsUserDatahubAdmin();
+    }
+
+    private static string RewriteLink(string link)
+    {
+        return link;
+    }
+
+    private string GetBody()
+    {
+        return _isFrench ? Announcement.BodyFr : Announcement.BodyEn;
+    }
+
+}

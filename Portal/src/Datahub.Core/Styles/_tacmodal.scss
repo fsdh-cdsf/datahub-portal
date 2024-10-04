@@ -1,0 +1,33 @@
+﻿@use 'Common/colors';
+
+.tacdivbox {
+    width: 50rem; /* or whatever width you want. */
+    max-width: 47rem; /* or whatever width you want. */
+    height: 15rem;
+    display: inline-block;
+    overflow-y: auto;
+    border: 1px solid black;
+    scrollbar-width: thin;
+    scrollbar-color: blue orange;
+    margin-left: auto;
+    margin-right: auto;
+    display:block;
+}
+
+.tacdivbox::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tacdivbox::-webkit-scrollbar-track {
+    background: colors.$white;
+}
+
+.tacdivbox::-webkit-scrollbar-thumb {
+    background-color: colors.$borderblue;
+}
+
+
+.tacfooter {
+    display: flex;
+    flex-direction: row;
+}

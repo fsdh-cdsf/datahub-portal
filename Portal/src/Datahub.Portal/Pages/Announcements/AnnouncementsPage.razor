@@ -1,0 +1,55 @@
+﻿@using Datahub.Core.Model.Announcements
+@using Datahub.Application.Services.Announcements
+
+
+@inject IAnnouncementService _announcementService
+
+@attribute [Route(PageRoutes.News)]
+@attribute [Route(PageRoutes.News_FR)]
+
+<PageTitle>
+    @Localizer["Announcements - Federal Science DataHub"]
+</PageTitle>
+
+<DatahubAuthView AuthLevel="DatahubAuthView.AuthLevels.Authenticated">
+    <MudStack Spacing="6">
+        <MudStack Row>
+            <DHMainContentTitle Title="@Localizer["Announcements"]" />
+            <MudSpacer/>
+            <DatahubAuthView AuthLevel="DatahubAuthView.AuthLevels.DatahubAdmin">
+                <DHButton Variant="Variant.Filled" Color="Color.Primary" Href="/announcements/edit/new">@Localizer["Create a new Announcement"]</DHButton>
+            </DatahubAuthView>
+        </MudStack>
+
+        @if (_announcements.Any())
+        {
+            <MudStack>
+                @foreach (var announcement in _announcements)
+                {
+                    var authLevel = announcement.IsVisible() ? DatahubAuthView.AuthLevels.Authenticated : DatahubAuthView.AuthLevels.DatahubAdmin;
+                    <DatahubAuthView AuthLevel="authLevel">
+                        <AnnouncementItem Announcement="@announcement" IsHidden="@(announcement.IsDeleted || announcement.IsScheduled())"/>
+                    </DatahubAuthView>
+                }
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center">
+                <DHIcon Icon="@Icons.Material.Outlined.Deck" Size="Size.Large" Class="mt-16 mb-4"/>
+                <MudText Typo="Typo.h3">@Localizer["No announcements yet!"]</MudText>
+            </MudStack>
+        }
+    </MudStack>
+</DatahubAuthView>
+
+@code {
+
+    private List<Announcement> _announcements = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _announcements = await _announcementService.GetAnnouncementsAsync();
+    }
+
+}

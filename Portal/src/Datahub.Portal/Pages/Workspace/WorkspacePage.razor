@@ -1,0 +1,157 @@
+@using Datahub.Core.Model.UserTracking
+@using Datahub.Infrastructure.Services.UserManagement
+@using Datahub.Portal.Components.PageAlerts
+@using Datahub.Portal.Pages.Workspace.Dashboard
+@using Datahub.Portal.Pages.Workspace.Database
+@using Datahub.Portal.Pages.Workspace.Metadata
+@using Datahub.Portal.Pages.Workspace.Publishing
+@using Datahub.Portal.Pages.Workspace.Reports
+@using Datahub.Portal.Pages.Workspace.Repositories
+@using Datahub.Portal.Pages.Workspace.Settings
+@using Datahub.Portal.Pages.Workspace.Storage
+@using Datahub.Portal.Pages.Workspace.Sudo
+@using Datahub.Portal.Pages.Workspace.Toolbox
+@using Datahub.Portal.Pages.Workspace.Healthcheck
+@using Datahub.Portal.Pages.Workspace.Users
+@using Datahub.Portal.Pages.Workspace.WebApp
+@using Datahub.Portal.Components.Sidebar
+
+@inject UserLocationManagerService _userLocationManagerService
+@inject ILogger<WorkspacePage> _logger
+
+@attribute [Route(PageRoutes.WorkspaceDefault)]
+@attribute [Route(PageRoutes.Workspace)]
+@attribute [Route(PageRoutes.WorkspaceSubSection)]
+
+<PageTitle>
+    @Localizer["{0} - Workspace - Federal Science DataHub", WorkspaceAcronymParam ?? ""]
+</PageTitle>
+
+<DHSidebarDrawer>
+    <WorkspaceSidebar WorkspaceAcronym="@WorkspaceAcronymParam"/>
+</DHSidebarDrawer>
+
+@{
+    var containsKey = !string.IsNullOrWhiteSpace(Section)
+                      && _sectionComponents.ContainsKey(Section);
+    var parameters = new Dictionary<string, object>
+    {
+        { "WorkspaceAcronym", WorkspaceAcronymParam }
+    };
+
+    if (!string.IsNullOrEmpty(SubSection))
+    {
+        parameters.Add("SubSection", SubSection);
+    }
+
+    if (containsKey)
+    {
+        <DatahubAuthView AuthLevel="@WorkspaceSidebar.GetAuthLevel(Section)" ProjectAcronym="@WorkspaceAcronymParam">
+            <Authorized>
+                <DynamicComponent Type=@SwitchDynamicComponentType() Parameters="@parameters"/>
+            </Authorized>
+            <NotAuthorized>
+                <NotAuthorizedMessage/>
+            </NotAuthorized>
+        </DatahubAuthView>
+    }
+    else
+    {
+        _logger.LogWarning("The section {Section} is not a valid section for the workspace page", Section);
+        <DatahubAuthView AuthLevel="@WorkspaceSidebar.GetAuthLevel(WorkspaceSidebar.SectionViews.Dashboard)"
+                         ProjectAcronym="@WorkspaceAcronymParam">
+            <Authorized>
+                <WorkspaceDashboard WorkspaceAcronym="@WorkspaceAcronymParam"/>
+            </Authorized>
+            <NotAuthorized>
+                <NotAuthorizedMessage/>
+            </NotAuthorized>
+        </DatahubAuthView>
+    }
+}
+
+
+@code {
+
+    [Parameter] public string WorkspaceAcronymParam { get; set; }
+
+    [Parameter] public string Section { get; set; } = WorkspaceSidebar.SectionViews.Dashboard;
+
+    [Parameter] public string SubSection { get; set; } = string.Empty;
+
+    private readonly Dictionary<string, Type> _sectionComponents = new()
+    {
+        { WorkspaceSidebar.SectionViews.Dashboard, typeof(WorkspaceDashboard) },
+        { WorkspaceSidebar.SectionViews.Storage, typeof(FileExplorerPage) },
+        { WorkspaceSidebar.SectionViews.Publishing, typeof(PublishingDashboard) },
+        { WorkspaceSidebar.SectionViews.Repositories, typeof(RepositoryManagementPage) },
+        { WorkspaceSidebar.SectionViews.SqlDatabase, typeof(WorkspaceDatabasePage) },
+        { WorkspaceSidebar.SectionViews.WebApp, typeof(WorkspaceWebAppPage) },
+        { WorkspaceSidebar.SectionViews.Users, typeof(WorkspaceUsersPage) },
+        { WorkspaceSidebar.SectionViews.Metadata, typeof(WorkspaceMetadataPage) },
+        { WorkspaceSidebar.SectionViews.Toolbox, typeof(WorkspaceToolboxPage) },
+        { WorkspaceSidebar.SectionViews.Reports, typeof(WorkspaceReports) },
+        { WorkspaceSidebar.SectionViews.Healthcheck, typeof(WorkspaceHealthcheckPage) },
+        { WorkspaceSidebar.SectionViews.Sudo, typeof(WorkspaceSudoPage) },
+        { WorkspaceSidebar.SectionViews.Settings, typeof(WorkspaceSettingsPage) },
+
+        { WorkspaceSidebar.SectionViews.Dashboard_FR, typeof(WorkspaceDashboard) },
+        { WorkspaceSidebar.SectionViews.Publishing_FR, typeof(PublishingDashboard) },
+        { WorkspaceSidebar.SectionViews.Repositories_FR, typeof(RepositoryManagementPage) },
+        { WorkspaceSidebar.SectionViews.Users_FR, typeof(WorkspaceUsersPage) },
+        { WorkspaceSidebar.SectionViews.Metadata_FR, typeof(WorkspaceMetadataPage) },
+        { WorkspaceSidebar.SectionViews.Toolbox_FR, typeof(WorkspaceToolboxPage) },
+        { WorkspaceSidebar.SectionViews.Reports_FR, typeof(WorkspaceReports) },
+        { WorkspaceSidebar.SectionViews.Settings_FR, typeof(WorkspaceSettingsPage) }
+    };
+
+    private Type SwitchDynamicComponentType()
+    {
+        var defaultSectionType = _sectionComponents[Section];
+
+        return (Section, SubSection) switch
+        {
+            (WorkspaceSidebar.SectionViews.Publishing, "") => defaultSectionType,
+            (WorkspaceSidebar.SectionViews.Publishing, null) => defaultSectionType,
+            (WorkspaceSidebar.SectionViews.Publishing, _) => typeof(PublishingSubmissionPage),
+            _ => defaultSectionType
+        };
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        await RecordRecentLink();
+    }
+
+    private async Task RecordRecentLink()
+    {
+        if (string.IsNullOrEmpty(WorkspaceAcronymParam))
+            return;
+
+        var linkType = SwitchLinkType();
+
+        var userRecentLink = new UserRecentLink()
+        {
+            LinkType = linkType,
+            DataProject = WorkspaceAcronymParam,
+            AccessedTime = DateTimeOffset.Now
+        };
+
+        await _userLocationManagerService.RegisterNavigation(userRecentLink);
+    }
+
+    private DatahubLinkType SwitchLinkType()
+    {
+        return Section switch
+        {
+            WorkspaceSidebar.SectionViews.Dashboard => DatahubLinkType.DataProject,
+            WorkspaceSidebar.SectionViews.Publishing => DatahubLinkType.PublishingDashboard,
+            WorkspaceSidebar.SectionViews.Storage => DatahubLinkType.Storage,
+            WorkspaceSidebar.SectionViews.Repositories => DatahubLinkType.Repository,
+            _ => DatahubLinkType.DataProject
+        };
+    }
+
+}

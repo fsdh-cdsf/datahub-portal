@@ -1,0 +1,134 @@
+@using MudBlazor.Utilities
+@using System.Text.Json.Nodes;
+@using Datahub.Application.Services
+@using Datahub.Infrastructure.Services
+@using Microsoft.Extensions.Logging;
+@using Microsoft.Extensions.Logging.Abstractions
+@using Microsoft.IdentityModel.Tokens
+@using Newtonsoft.Json
+
+@inject IUsersStatusService _userStatusService;
+@inject DatahubPortalConfiguration _datahubPortalConfiguration
+@inject IHttpClientFactory _httpClientFactory
+
+<MudTable Striped Items="@UserWorkspaces" Filter="new Func<UserWorkspaces,bool>(FilterUserWorkspaces)">
+<ToolBarContent>
+    <MudTextField @bind-Value="_searchString" Placeholder=@Localizer["Search by User or Workspace"] Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" Label="@Localizer["Search"]"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>
+            <MudTableSortLabel SortBy="new Func<UserWorkspaces, object>(x => x.User.DisplayName)" InitialDirection="SortDirection.Ascending">
+                @Localizer["User"]
+            </MudTableSortLabel>
+        </MudTh>
+        @if (!HideInfo)
+        {
+            <MudTh>
+                <MudTableSortLabel SortBy="new Func<UserWorkspaces, object>(x => GetUserStatus(x.User.Email))">
+                    @Localizer["Status"]
+                </MudTableSortLabel>
+            </MudTh>
+        }
+        <MudTh>
+            @Localizer["Workspaces"]
+        </MudTh>
+            
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="User">
+            <MudText Typo="Typo.h6">@context.User.DisplayName</MudText>
+            <MudText Typo="Typo.body2">@context.User.Email</MudText>
+        </MudTd>
+        @if (!HideInfo)
+        {
+            <MudTd DataLabel="Status">
+                @switch(GetUserStatus(@context.User.Email))
+                {
+                    case "locked":
+                        <DHIcon Icon="@Icons.Material.Filled.Lock" Title=@Localizer["Account locked"] />
+                        break;
+                    case "missing":
+                        <DHIcon Icon="@Icons.Material.Filled.QuestionMark" Title=@Localizer["Account missing from MSGraph"] />
+                        break;
+                    case "":
+                        break;                        
+                }
+            </MudTd>
+        }
+        <MudTd DataLabel="Workspaces">
+            <ul style="">
+                @foreach(var workspace in context.Workspaces)
+                {
+                    <li>
+                        <MudLink Href="@($"/{_datahubPortalConfiguration.ProjectUrlSegment}/{workspace.Project_Acronym_CD}")">
+                            <MudText>@workspace.ProjectName <span style="@AcronymStyle">(@workspace.Project_Acronym_CD)</span></MudText>
+                        </MudLink>
+                    </li>
+                }
+            </ul>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager RowsPerPageString="@Localizer["Rows per page:"]"/>
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Parameter]
+    public ICollection<UserWorkspaces> UserWorkspaces { get; set; }
+
+    [Parameter]
+    public bool HideInfo { get; set; }
+
+    private string _searchString;
+
+    private string AcronymStyle => new StyleBuilder()
+        .Build();
+
+    public List<string> LockedUsers = new ();
+
+    public List<string> AllUsers = new ();
+
+    public bool LoadStatus = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultDict = await _userStatusService.GetUsersStatus();
+        if (resultDict != null)
+        {
+            AllUsers = resultDict["all"];
+            LockedUsers = resultDict["locked"];
+            LoadStatus = true;
+        }
+    }
+
+    private string GetUserStatus(string email)
+    {
+        var status = "";
+        if (LockedUsers.Contains(email) && !LockedUsers.Any())
+        {
+            status = "locked";
+        } else if (!AllUsers.Contains(email) && !AllUsers.Any())
+        {
+            status = "missing";
+        }
+        return status;
+    }
+
+    private bool FilterUserWorkspaces(UserWorkspaces userWorkspaces)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+        if (userWorkspaces.User.DisplayName.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Check that userWorkspaces.User.Email is not null
+        if (userWorkspaces.User.Email != null)
+        {
+            if (userWorkspaces.User.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return userWorkspaces.Workspaces.Any(x => x.Project_Acronym_CD.Contains(_searchString, StringComparison.OrdinalIgnoreCase)) || 
+               userWorkspaces.Workspaces.Any(x => x.ProjectName.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+    }
+}

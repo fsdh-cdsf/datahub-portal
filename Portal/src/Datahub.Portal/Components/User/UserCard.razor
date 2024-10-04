@@ -1,0 +1,78 @@
+@using Datahub.Application.Services.UserManagement
+@using Microsoft.Graph.Models
+@using Datahub.Core.Model.Achievements
+@using Datahub.Core.Extensions
+
+@inject IUserInformationService _userInformationService
+@inject ILogger<UserCard> _logger;
+@implements IDisposable
+
+@if (_viewedUser is null)
+{
+    return;
+}
+
+<MudStack Row Spacing="0" AlignItems="AlignItems.Center">
+    <UserAvatar ViewedUser="@_viewedUser" Size="@Size"/>
+    <MudStack Spacing="0" AlignItems="AlignItems.Start">
+        <MudText Typo="Typo.h6" Class="px-4">@_viewedUser?.DisplayName</MudText>
+        @if (ShowEmail)
+        {
+            <MudText Typo="Typo.body2" Class="px-4 mud-text-secondary">@_viewedUser?.Email</MudText>
+        }
+    </MudStack>
+    <MudSpacer/>
+    @if (ShowProfileLink)
+    {
+        <UserViewProfileIconButton ViewedUserGraphId="@ViewedUserGraphId"/>
+    }
+</MudStack>
+
+@code {
+
+    [Parameter]
+    public string ViewedUserGraphId { get; set; }
+
+    [Parameter]
+    public PortalUser ViewedUser { get; set; }
+
+    [Parameter]
+    public Size Size { get; set; } = Size.Large;
+
+    [Parameter]
+    public bool ShowProfileLink { get; set; } = false;
+
+    [Parameter]
+    public bool ShowEmail { get; set; } = true;
+
+    private PortalUser _viewedUser;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        _viewedUser = await _userInformationService.GetPortalUserAsync(ViewedUserGraphId);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _userInformationService.PortalUserUpdated += OnViewedUserUpdated;
+    }
+
+    private void OnViewedUserUpdated(object sender, PortalUserUpdatedEventArgs e)
+    {
+        if (_viewedUser.Id != e.UpdatedUser.Id)
+        {
+            return;
+        }
+
+        _viewedUser = e.UpdatedUser;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _userInformationService.PortalUserUpdated -= OnViewedUserUpdated;
+    }
+
+}
