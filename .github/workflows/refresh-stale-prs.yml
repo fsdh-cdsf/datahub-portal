@@ -13,8 +13,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Set up GitHub CLI
-        run: gh auth login --with-token <<< "${{ steps.create_token.outputs.token }}"
+
 
       - name: Create App Token
         id: create_token
@@ -22,7 +21,10 @@ jobs:
         with:
           application_id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
           application_private_key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
-
+          
+      - name: Set up GitHub CLI
+        run: gh auth login --with-token <<< "${{ steps.create_token.outputs.token }}"
+        
       - name: Get Latest SHA of Base Branch (main)
         id: get_main_sha
         run: |
