@@ -19,8 +19,9 @@ jobs:
           private_key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
     
       - name: Automatically update PR
+        env:
+          GITHUB_TOKEN: ${{ steps.create_token.outputs.token }}
         uses: wechuli/pull-request-updater@v2.1.0
         with:
-          token: ${{ steps.create_token.outputs.token }}
           base: main
 
