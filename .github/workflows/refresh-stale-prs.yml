@@ -8,6 +8,8 @@ on:
 jobs:
   refresh_stale_prs:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Create App token
         id: create_token
