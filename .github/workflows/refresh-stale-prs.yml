@@ -13,11 +13,8 @@ jobs:
       contents: read
 
     steps:
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ steps.create_token.outputs.token }}
-        run: |
-          echo $GH_TOKEN | gh auth login --with-token
+      - name: Set up GitHub CLI
+        run: gh auth login --with-token <<< "${{ steps.create_token.outputs.token }}"
 
       - name: Create App Token
         id: create_token
