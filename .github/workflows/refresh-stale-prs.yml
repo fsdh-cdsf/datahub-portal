@@ -1,52 +1,30 @@
-name: Pull Request Auto Update
+---
+name: Pull request auto update
 
 on:
   push:
     branches:
       - "main"
-
 jobs:
   refresh_stale_prs:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-
     steps:
-
-
-      - name: Create App Token
+      - name: Create App token
         id: create_token
         uses: peter-murray/workflow-application-token-action@v4
         with:
           application_id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
           application_private_key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
           
-      - name: Set up GitHub CLI
-        run: gh auth login --with-token <<< "${{ steps.create_token.outputs.token }}"
-        
-      - name: Get Latest SHA of Default Branch (main)
-        id: get_main_sha
-        run: |
-          main_sha=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/fsdh-cdsf/datahub-portal/branches/main | jq -r '.commit.sha')
-          echo "Main branch SHA: $main_sha"
-          echo "main_sha=$main_sha" >> $GITHUB_OUTPUT
 
-      - name: Debug Variables
-        run: |
-          echo "Debugging values before updating PR:"
-          echo "Latest main branch SHA: ${{ steps.get_main_sha.outputs.main_sha }}"
-          echo "PR number: 2"
-          echo "Repository: fsdh-cdsf/datahub-portal"
-
-      - name: Update PR Branch
-        run: |
-          gh api \
-            --method PUT \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/fsdh-cdsf/datahub-portal/pulls/2/update-branch \
-            -f "expected_head_sha=${{ steps.get_main_sha.outputs.main_sha }}"
+      - name: Automatically update PR
+        uses: adRise/update-pr-branch@v0.9.1
+        with:
+          token: ${{ steps.create_token.outputs.token }}
+          base: "main"
+          required_approval_count: 0
+          require_passed_checks: false
+          allow_ongoing_checks: true
+          sort: "created"
+          direction: "desc"
+          require_auto_merge_enabled: false
