@@ -11,12 +11,10 @@ jobs:
     steps:
       - name: Create App token
         id: create_token
-        uses: actions/create-github-app-token@v1
+        uses: peter-murray/workflow-application-token-action@v4
         with:
-          app-id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
-          private-key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
-          owner: ${{ github.repository_owner }}
-          repositories: "datahub-portal"
+          application_id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
+          application_private_key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
           
 
       - name: Automatically update PR
