@@ -25,15 +25,22 @@ jobs:
       - name: Set up GitHub CLI
         run: gh auth login --with-token <<< "${{ steps.create_token.outputs.token }}"
         
-      - name: Get Latest SHA of Base Branch (main)
+      - name: Get Latest SHA of Default Branch (main)
         id: get_main_sha
         run: |
-          latest_sha=$(gh api \
+          main_sha=$(gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/fsdh-cdsf/datahub-portal/branches/main | jq -r '.commit.sha')
-          echo "Latest SHA of main branch: $latest_sha"
-          echo "latest_sha=$latest_sha" >> $GITHUB_OUTPUT
+          echo "Main branch SHA: $main_sha"
+          echo "main_sha=$main_sha" >> $GITHUB_OUTPUT
+
+      - name: Debug Variables
+        run: |
+          echo "Debugging values before updating PR:"
+          echo "Latest main branch SHA: ${{ steps.get_main_sha.outputs.main_sha }}"
+          echo "PR number: 2"
+          echo "Repository: fsdh-cdsf/datahub-portal"
 
       - name: Update PR Branch
         run: |
@@ -42,4 +49,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/fsdh-cdsf/datahub-portal/pulls/2/update-branch \
-            -f "expected_head_sha=${{ steps.get_main_sha.outputs.latest_sha }}"
+            -f "expected_head_sha=${{ steps.get_main_sha.outputs.main_sha }}"
