@@ -1,30 +1,42 @@
----
-name: Pull request auto update
+name: Pull Request Auto Update
 
 on:
   push:
     branches:
       - "main"
+
 jobs:
   refresh_stale_prs:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
     steps:
-      - name: Create App token
+      - name: Create App Token
         id: create_token
         uses: peter-murray/workflow-application-token-action@v4
         with:
           application_id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
           application_private_key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
-          
 
-      - name: Automatically update PR
-        uses: adRise/update-pr-branch@v0.9.1
-        with:
-          token: ${{ steps.create_token.outputs.token }}
-          base: "main"
-          required_approval_count: 0
-          require_passed_checks: false
-          allow_ongoing_checks: true
-          sort: "created"
-          direction: "desc"
-          require_auto_merge_enabled: false
+      - name: Get Latest SHA of Base Branch (main)
+        id: get_main_sha
+        run: |
+          latest_sha=$(curl -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ steps.create_token.outputs.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/fsdh-cdsf/datahub-portal/branches/main | jq -r '.commit.sha')
+          echo "Latest SHA of main branch: $latest_sha"
+          echo "latest_sha=$latest_sha" >> $GITHUB_OUTPUT
+
+      - name: Update PR Branch
+        run: |
+          curl -L \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ steps.create_token.outputs.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/fsdh-cdsf/datahub-portal/pulls/2/update-branch \
+            -d "{\"expected_head_sha\":\"${{ steps.get_main_sha.outputs.latest_sha }}\"}"
