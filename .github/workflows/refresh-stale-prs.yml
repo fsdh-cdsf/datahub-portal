@@ -15,6 +15,7 @@ jobs:
         with:
           app-id: ${{ vars.DATAHUB_PORTAL_PR_APP_ID }}
           private-key: ${{ secrets.DATAHUB_PORTAL_PR_RW }}
+          owner: ${{ github.repository_owner }}
           repositories: "data-portal"
           
 
